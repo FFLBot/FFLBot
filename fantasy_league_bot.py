@@ -66,14 +66,14 @@ async def league_type_step(cb: CallbackQuery, state: FSMContext):
 @dp.callback_query(Form.platform, F.data.startswith("platform"))
 async def platform_step(cb: CallbackQuery, state: FSMContext):
     choice = cb.data.split(":")[1]
-    await state.update_data(platform=choice)
+
     if choice in ["ESPN", "Fantrax", "Altro"]:
-    await state.set_state(Form.other_info)
-    await state.update_data(platform=choice, skip_remaining=True)
-    await cb.message.edit_text("Inserisci eventuali altre informazioni sulla lega:")
-else:
-    await state.update_data(platform=choice, other_info="")
-    await ruleset_prompt(cb, state)
+        await state.set_state(Form.other_info)
+        await state.update_data(platform=choice, skip_remaining=True)
+        await cb.message.edit_text("Inserisci eventuali altre informazioni sulla lega:")
+    else:
+        await state.update_data(platform=choice, other_info="")
+        await ruleset_prompt(cb, state)
 
 @dp.message(Form.other_info)
 async def other_info_step(message: Message, state: FSMContext):
