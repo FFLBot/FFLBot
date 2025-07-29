@@ -73,7 +73,7 @@ async def platform_step(cb: CallbackQuery, state: FSMContext):
 @dp.message(Form.other_info)
 async def other_info_step(message: Message, state: FSMContext):
     await state.update_data(other_info=message.text)
-    data = await state.get_data()
+    await ruleset_prompt(message, state)
 
     summary = (
         f"🏈 **Aperte le iscrizioni a una nuova lega di fantasy football!**\n"
