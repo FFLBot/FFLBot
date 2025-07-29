@@ -40,13 +40,16 @@ def kb(prefix: str, options: list[str], back: bool = False) -> InlineKeyboardMar
 
 @dp.message(Command("crealega"))
 async def crealega(message: Message, state: FSMContext):
-    await state.set_state(Form.name)
-    await state.update_data(group_id=GROUP_ID)
-    try:
-        await bot.send_message(message.from_user.id, "Come si chiama la lega?")
-    except Exception:
-        await message.reply("Apri la chat privata con me, premi /start e riprova /crealega.")
-
+    # Salva l'ID del gruppo dove è stato lanciato il comando
+    if message.chat.type in ("group", "supergroup"):
+        await state.update_data(group_id=message.chat.id)
+        try:
+            await bot.send_message(message.from_user.id, "Perfetto! Iniziamo a creare la tua lega.\n\nCome si chiama la lega?")
+            await state.set_state(Form.name)
+        except:
+            await message.reply("Per favore apri la chat privata con me, premi /start e poi riprova /crealega.")
+    else:
+        await message.answer("Devi scrivere /crealega nel gruppo per creare una lega.")
 @dp.message(Form.name)
 async def name_step(message: Message, state: FSMContext):
     await state.update_data(name=message.text)
