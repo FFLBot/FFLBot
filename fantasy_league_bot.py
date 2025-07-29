@@ -51,7 +51,7 @@ async def crealega(message: Message, state: FSMContext):
 async def name_step(message: Message, state: FSMContext):
     await state.update_data(name=message.text)
     await state.set_state(Form.league_type)
-    await message.answer("Che tipo di lega è?", reply_markup=kb("type", ["Dynasty", "Redraft"], back=True))
+    await bot.send_message(message.from_user.id, "Che tipo di lega è?", reply_markup=kb("type", ["Dynasty", "Redraft"], back=True))
 
 @dp.callback_query(Form.league_type, F.data.startswith("type"))
 async def league_type_step(cb: CallbackQuery, state: FSMContext):
@@ -74,13 +74,14 @@ async def platform_step(cb: CallbackQuery, state: FSMContext):
 async def other_info_step(message: Message, state: FSMContext):
     await state.update_data(other_info=message.text)
     data = await state.get_data()
-
+    
     summary = (
         f"🏈 **Aperte le iscrizioni a una nuova lega di fantasy football!**\n"
         f"Tipo: {data['league_type']}\n"
         f"Piattaforma: {data['platform']}\n"
         f"Info: {data['other_info']}\n"
-        "Premi qui per partecipare:")
+        "Premi qui per partecipare:"
+    )
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
@@ -93,12 +94,13 @@ async def other_info_step(message: Message, state: FSMContext):
     msg = await bot.send_message(GROUP_ID, summary, reply_markup=keyboard, parse_mode="Markdown")
     await bot.pin_chat_message(GROUP_ID, msg.message_id, disable_notification=False)
     leagues[msg.message_id] = {"data": data, "participants": [], "creator_id": message.from_user.id}
-    await message.answer("Lega creata e pubblicata nel gruppo!")
+    await bot.send_message(message.from_user.id, "Lega creata e pubblicata nel gruppo!")
+
 
 async def ruleset_prompt(source, state: FSMContext):
-    send = source.message.edit_text if isinstance(source, CallbackQuery) else source.answer
     await state.set_state(Form.ruleset)
-    await send("Regolamento e gestione:", reply_markup=kb("rules", ["FF Lovers", "Altro"], back=True))
+    await bot.send_message(source.from_user.id if isinstance(source, CallbackQuery) else source.from_user.id,
+                           "Regolamento e gestione:", reply_markup=kb("rules", ["FF Lovers", "Altro"], back=True))
 
 @dp.callback_query(Form.ruleset, F.data.startswith("rules"))
 async def ruleset_step(cb: CallbackQuery, state: FSMContext):
@@ -113,12 +115,12 @@ async def ruleset_step(cb: CallbackQuery, state: FSMContext):
 @dp.message(Form.ruleset_custom)
 async def ruleset_custom(message: Message, state: FSMContext):
     await state.update_data(ruleset=message.text)
-    await teams_prompt(message, state)
+    await teams_prompt(message.from_user.id, state)
 
 async def teams_prompt(source, state: FSMContext):
-    send = source.message.edit_text if isinstance(source, CallbackQuery) else source.answer
     await state.set_state(Form.teams)
-    await send("Quante squadre partecipano?", reply_markup=kb("teams", ["10", "12", "16"], back=True))
+    await bot.send_message(source.from_user.id if isinstance(source, CallbackQuery) else source.from_user.id,
+                           "Quante squadre partecipano?", reply_markup=kb("teams", ["10", "12", "16"], back=True))
 
 @dp.callback_query(Form.teams, F.data.startswith("teams"))
 async def teams_step(cb: CallbackQuery, state: FSMContext):
@@ -144,7 +146,7 @@ async def sflex_step(cb: CallbackQuery, state: FSMContext):
 
 async def bestball_prompt(cb: CallbackQuery, state: FSMContext):
     await state.set_state(Form.bestball)
-    await cb.message.edit_text("Usi la formazione BestBall?", reply_markup=kb("bb", ["Si", "No"], back=True))
+    await bot.send_message(cb.from_user.id, "Usi la formazione BestBall?", reply_markup=kb("bb", ["Si", "No"], back=True))
 
 @dp.callback_query(Form.bestball, F.data.startswith("bb"))
 async def bestball_step(cb: CallbackQuery, state: FSMContext):
