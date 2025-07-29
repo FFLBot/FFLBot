@@ -56,8 +56,12 @@ async def name_step(message: Message, state: FSMContext):
     await state.set_state(Form.league_type)
     await message.answer("Che tipo di lega è?", reply_markup=kb("type", ["Dynasty", "Redraft"], back=True))
 
-@dp.callback_query(Form.league_type, F.data.startswith("type"))
+@dp.callback_query(F.data.startswith("type"))
 async def league_type_step(cb: CallbackQuery, state: FSMContext):
+    current = await state.get_state()
+    if current != Form.league_type.state:
+        return await cb.answer("Errore di stato. Riprova o ricomincia con /crealega", show_alert=True)
+
     choice = cb.data.split(":")[1]
     await state.update_data(league_type=choice)
     await state.set_state(Form.platform)
