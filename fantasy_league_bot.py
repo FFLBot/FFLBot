@@ -63,8 +63,12 @@ async def league_type_step(cb: CallbackQuery, state: FSMContext):
     await state.set_state(Form.platform)
     await cb.message.edit_text("Scegli la piattaforma:", reply_markup=kb("platform", ["Sleeper", "ESPN", "Fantrax", "Altro"], back=True))
 
-@dp.callback_query(Form.platform, F.data.startswith("platform"))
+@@dp.callback_query(F.data.startswith("platform"))
 async def platform_step(cb: CallbackQuery, state: FSMContext):
+    current = await state.get_state()
+    if current != Form.platform.state:
+        return await cb.answer("Errore di stato, riprova da capo.", show_alert=True)
+
     choice = cb.data.split(":")[1]
 
     if choice in ["ESPN", "Fantrax", "Altro"]:
