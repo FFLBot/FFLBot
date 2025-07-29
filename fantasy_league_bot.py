@@ -68,40 +68,42 @@ async def platform_step(cb: CallbackQuery, state: FSMContext):
     choice = cb.data.split(":")[1]
     await state.update_data(platform=choice)
     if choice in ["ESPN", "Fantrax", "Altro"]:
-        await state.set_state(Form.other_info)
-        await cb.message.edit_text("Inserisci eventuali altre informazioni sulla lega:")
-    else:
-        await ruleset_prompt(cb, state)
+    await state.set_state(Form.other_info)
+    await state.update_data(platform=choice, skip_remaining=True)
+    await cb.message.edit_text("Inserisci eventuali altre informazioni sulla lega:")
+else:
+    await state.update_data(platform=choice, other_info="")
+    await ruleset_prompt(cb, state)
 
 @dp.message(Form.other_info)
 async def other_info_step(message: Message, state: FSMContext):
     await state.update_data(other_info=message.text)
-    await ruleset_prompt(message, state)
+    data = await state.get_data()
 
-    summary = (
-        f"🏈 **Aperte le iscrizioni a una nuova lega di fantasy football!**\n"
-        f"Tipo: {data['league_type']}\n"
-        f"Piattaforma: {data['platform']}\n"
-        f"Info: {data['other_info']}\n"
-        "Premi qui per partecipare:")
+    if data.get("skip_remaining"):
+        summary = (
+            f"🏈 **Aperte le iscrizioni a una nuova lega di fantasy football!**\n"
+            f"Tipo: {data['league_type']}\n"
+            f"Piattaforma: {data['platform']}\n"
+            f"Info: {data['other_info']}\n"
+            "Premi qui per partecipare:"
+        )
 
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="📅 Partecipa", callback_data="join"),
-            InlineKeyboardButton(text="❌ Annulla", callback_data="leave"),
-            InlineKeyboardButton(text="🗑 Elimina lega", callback_data="delete_league")
-        ]
-    ])
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="📅 Partecipa", callback_data="join"),
+                InlineKeyboardButton(text="❌ Annulla", callback_data="leave"),
+                InlineKeyboardButton(text="🗑 Elimina lega", callback_data="delete_league")
+            ]
+        ])
 
-    msg = await bot.send_message(GROUP_ID, summary, reply_markup=keyboard, parse_mode="Markdown")
-    await bot.pin_chat_message(GROUP_ID, msg.message_id, disable_notification=False)
-    leagues[msg.message_id] = {"data": data, "participants": [], "creator_id": message.from_user.id}
-    await message.answer("Lega creata e pubblicata nel gruppo!")
-
-async def ruleset_prompt(source, state: FSMContext):
-    send = source.message.edit_text if isinstance(source, CallbackQuery) else source.answer
-    await state.set_state(Form.ruleset)
-    await send("Regolamento e gestione:", reply_markup=kb("rules", ["FF Lovers", "Altro"], back=True))
+        msg = await bot.send_message(data["group_id"], summary, reply_markup=keyboard, parse_mode="Markdown")
+        await bot.pin_chat_message(data["group_id"], msg.message_id, disable_notification=False)
+        leagues[msg.message_id] = {"data": data, "participants": [], "creator_id": message.from_user.id}
+        await message.answer("Lega creata e pubblicata nel gruppo!")
+        await state.clear()
+    else:
+        await ruleset_prompt(message, state)
 
 @dp.callback_query(Form.ruleset, F.data.startswith("rules"))
 async def ruleset_step(cb: CallbackQuery, state: FSMContext):
